@@ -1,0 +1,4 @@
+mcp-jira-slack/node_modules
+node_modules
+.env
+.codex
