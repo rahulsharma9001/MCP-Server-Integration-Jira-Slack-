@@ -139,21 +139,25 @@ mcp-jira-slack/
 ## 🔐 Environment Variables
 
 # Jira
+```
 JIRA_BASE_URL=https://your-domain.atlassian.net
 JIRA_EMAIL=your-email
 JIRA_API_TOKEN=your-token
 JIRA_PROJECT_KEY=SCRUM
+```
 
+---
+```
 # Slack
 SLACK_BOT_TOKEN=xoxb-xxxx
 DEFAULT_SLACK_CHANNEL=C12345678
-
+```
 ---
 
 ## 🚀 Run Server
-
+```
 node server.js
-
+```
 ---
 
 # 🧠 MCP Tools (Detailed Explanation)
