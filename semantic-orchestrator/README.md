@@ -34,9 +34,9 @@ HTTP Bridge (Node.js)
 - asks for follow-up when inputs are incomplete
 - returns an execution summary
 
-For a deeper explanation of how the Ollama-based orchestration works in this project, see [OLLAMA_ORCHESTRATION.md](/home/nashtech/Desktop/jira-mcp-server/semantic-orchestrator/OLLAMA_ORCHESTRATION.md:1).
+For a deeper explanation of how the Ollama-based orchestration works in this project, see [OLLAMA_ORCHESTRATION.md](/semantic-orchestrator/OLLAMA_ORCHESTRATION.md).
 
-For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/home/nashtech/Desktop/jira-mcp-server/semantic-orchestrator/END_TO_END_RUN_GUIDE.md:1).
+For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/END_TO_END_RUN_GUIDE.md).
 
 ## Environment variables
 
