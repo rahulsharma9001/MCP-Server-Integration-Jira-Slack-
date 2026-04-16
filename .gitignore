@@ -4,3 +4,4 @@ node_modules
 .codex
 semantic-orchestrator/__pycache__
 .github
+semantic-orchestrator/.venv
