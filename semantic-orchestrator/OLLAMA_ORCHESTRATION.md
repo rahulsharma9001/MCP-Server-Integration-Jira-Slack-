@@ -6,9 +6,9 @@ This document explains how orchestration works in this project when `Ollama` is 
 
 This project has two execution layers:
 
-1. The Node bridge in `mcp-jira-slack/`, which performs the real side effects:
-   - create Jira tickets
-   - send Slack messages
+1. The Node bridge in `mcp-jira-slack/`, which performs the real side effects by calling MCP tools:
+   - create Jira tickets through the Atlassian MCP server
+   - send Slack messages through the Slack MCP server
 2. The Python orchestrator in `semantic-orchestrator/`, which decides what should happen for a natural-language request.
 
 With Ollama enabled, the orchestrator uses a local model instead of a paid cloud model to interpret user requests and choose the right action flow.
@@ -39,9 +39,9 @@ semantic-orchestrator/orchestrator.py
            v
        Node HTTP bridge
            |
-           +--> Jira API
+           +--> Atlassian MCP server
            |
-           +--> Slack API
+           +--> Slack MCP server
 ```
 
 ## Main Files Involved
@@ -56,10 +56,13 @@ semantic-orchestrator/orchestrator.py
   - `get_execution_policy`
 
 - `mcp-jira-slack/http-bridge.js`
-  This receives authorized HTTP requests from the Python side and forwards them to the Jira and Slack service code.
+  This receives authorized HTTP requests from the Python side and forwards them to the Jira and Slack MCP-backed service code.
 
 - `mcp-jira-slack/src/workflows/ticket-orchestration.js`
   This is where the Node side ensures Jira is created first and Slack is notified after that.
+
+- `mcp-jira-slack/src/services/mcp-client.js`
+  This is the shared remote MCP client used to connect to Atlassian and Slack MCP servers over Streamable HTTP.
 
 ## How Ollama Is Used
 
@@ -133,10 +136,12 @@ The Python orchestrator does not talk to Jira or Slack directly. Instead, it cal
 - `ORCHESTRATION_BRIDGE_URL`
 - `ORCHESTRATION_API_KEY`
 
+The Node bridge then talks to the configured MCP servers instead of calling vendor REST endpoints directly.
+
 That gives the project a cleaner boundary:
 
 - the Python side handles interpretation and orchestration
-- the Node side handles side effects and service integrations
+- the Node side handles side effects and MCP integrations
 - the shared API key limits who can call the bridge
 
 ## Benefits After Adding Orchestration

@@ -12,8 +12,8 @@ At a high level, the system works like this:
 2. The Python orchestrator interprets the request.
 3. The orchestrator calls the Node HTTP bridge.
 4. The bridge performs the real actions:
-   - create a Jira ticket
-   - send a Slack message
+   - call the Atlassian MCP server for Jira actions
+   - call the Slack MCP server for Slack actions
 5. The result is returned to the terminal.
 
 ## Components Involved
@@ -27,7 +27,7 @@ There are three moving parts you need to know about:
   The Python sidecar that handles orchestration logic.
 
 - `mcp-jira-slack/`
-  The Node service that talks to Jira and Slack.
+  The Node service that talks to the Atlassian MCP server and Slack MCP server.
 
 ## Before You Start
 
@@ -36,8 +36,8 @@ Make sure you have all of the following available:
 - Node.js installed
 - Python 3 installed
 - Ollama installed
-- valid Jira credentials
-- valid Slack bot token
+- Atlassian MCP authentication details
+- Slack MCP authentication details
 
 You also need a root `.env` file in the project with the required settings.
 
@@ -48,20 +48,34 @@ The root `.env` should contain the core settings for Jira, Slack, orchestration,
 Example:
 
 ```bash
-# Jira
-JIRA_BASE_URL=https://your-domain.atlassian.net
-JIRA_EMAIL=your-email@example.com
-JIRA_API_TOKEN=your-jira-api-token
+# Jira defaults used by orchestration
 JIRA_PROJECT_KEY=SCRUM
 
-# Slack
-SLACK_BOT_TOKEN=xoxb-your-slack-bot-token
+# Slack defaults used by orchestration
 DEFAULT_SLACK_CHANNEL=C12345678
 
 # Orchestration bridge
 ORCHESTRATION_API_PORT=3010
 ORCHESTRATION_API_KEY=your-shared-secret
 ORCHESTRATION_BRIDGE_URL=http://localhost:3010
+
+# MCP-backed execution
+INTEGRATION_MODE=mcp
+
+# Atlassian Rovo MCP
+ATLASSIAN_MCP_URL=https://mcp.atlassian.com/v1/mcp
+ATLASSIAN_MCP_CREATE_ISSUE_TOOL=createJiraIssue
+# Use one of the following auth approaches:
+# ATLASSIAN_MCP_AUTH_HEADER=Basic base64(email:api_token)
+ATLASSIAN_MCP_EMAIL=your-email@example.com
+ATLASSIAN_MCP_API_TOKEN=your-atlassian-api-token
+
+# Slack MCP
+SLACK_MCP_URL=https://mcp.slack.com/mcp
+SLACK_MCP_SEND_MESSAGE_TOOL=send_message
+SLACK_MCP_AUTH_HEADER=Bearer your-slack-mcp-access-token
+# Optional, depending on your Slack MCP setup:
+SLACK_MCP_APP_ID=your-slack-app-id
 
 # Ollama
 LLM_PROVIDER=ollama
@@ -80,7 +94,7 @@ cd /home/nashtech/Desktop/jira-mcp-server/mcp-jira-slack
 npm install
 ```
 
-This installs the packages required for the HTTP bridge and Jira/Slack service integration.
+This installs the packages required for the HTTP bridge and the MCP-backed Jira/Slack execution layer.
 
 ### 2. Create the Python virtual environment
 
@@ -198,7 +212,7 @@ Expected result:
 - a JSON success response
 - the message appears in Slack
 
-This confirms the Slack integration is working independently of the orchestrator.
+This confirms the Slack MCP integration is working independently of the orchestrator.
 
 ### Test 3. Test Jira creation directly through the bridge
 
@@ -219,7 +233,7 @@ Expected result:
 - a Jira ticket is created
 - Slack is notified if `notifySlack` is `true`
 
-This confirms the Jira + Slack bridge flow is working before the LLM is involved.
+This confirms the Jira + Slack MCP-backed bridge flow is working before the LLM is involved.
 
 ### Test 4. Test Slack through the orchestrator
 
@@ -261,12 +275,18 @@ the flow is:
 3. It uses the deterministic execution path.
 4. It calls `bridge_plugin.py`.
 5. The plugin calls the Node HTTP bridge.
-6. The Node bridge creates the Jira ticket.
-7. The Node bridge sends the Slack message.
+6. The Node bridge calls the Atlassian MCP server to create the Jira ticket.
+7. The Node bridge calls the Slack MCP server to send the Slack message.
 8. The structured response comes back to Python.
 9. The terminal prints the result.
 
 This deterministic path exists so that common operational commands execute reliably even when local-model tool calling is inconsistent.
+
+## MCP-Specific Notes
+
+- The Atlassian MCP tool name defaults to `createJiraIssue`, which matches Atlassian's documented Jira create tool.
+- The Slack MCP tool name may vary depending on your Slack MCP configuration. If `send_message` does not exist on your Slack MCP server, the bridge will return an error listing the available tools. Update `SLACK_MCP_SEND_MESSAGE_TOOL` in `.env` to match the actual tool name.
+- The current implementation uses auth headers from `.env`. That keeps the process feasible for backend automation, but it assumes you have already completed any required vendor-side OAuth or token provisioning outside this repo.
 
 ## Common Problems and Fixes
 
@@ -309,6 +329,15 @@ Fix:
 ollama pull llama3.2
 ```
 
+### Problem: Slack MCP tool not found
+
+Cause:
+- `SLACK_MCP_SEND_MESSAGE_TOOL` does not match the actual Slack MCP server tool name
+
+Fix:
+- inspect the error message returned by the bridge
+- update `SLACK_MCP_SEND_MESSAGE_TOOL` in `.env` to the actual tool name exposed by your Slack MCP server
+
 ### Problem: OpenAI quota errors
 
 Cause:
@@ -341,6 +370,7 @@ Fix:
 - Start by testing the bridge directly before blaming the LLM layer.
 - Use simple phrasing for operational requests when possible.
 - If you change the Ollama model, make sure `.env` and `ollama list` match exactly.
+- If you move to different MCP servers or tool names, update the MCP URL and tool-name env vars before testing.
 
 ## Quick Start Summary
 

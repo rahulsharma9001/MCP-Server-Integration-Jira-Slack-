@@ -34,9 +34,10 @@ export async function orchestrateTicketCreation({
   }
 
   try {
+    const jiraLabel = ticket.key || ticket.rawText || "Jira ticket created";
     const message =
       slackMessage ||
-      `🎫 Jira Ticket Created: ${ticket.key}\nSummary: ${summary}\nType: ${issueType}`;
+      `🎫 Jira Ticket Created: ${jiraLabel}\nSummary: ${summary}\nType: ${issueType}`;
 
     const slackResponse = await sendSlackMessage(resolvedChannel, message);
     result.slack = slackResponse;

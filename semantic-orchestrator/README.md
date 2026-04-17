@@ -21,9 +21,9 @@ Semantic Kernel Orchestrator (Python)
    v
 HTTP Bridge (Node.js)
    |
-   +--> Jira API
+   +--> Atlassian MCP Server
    |
-   +--> Slack API
+   +--> Slack MCP Server
 ```
 
 ## What the orchestrator does
@@ -38,6 +38,8 @@ For a deeper explanation of how the Ollama-based orchestration works in this pro
 
 For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/END_TO_END_RUN_GUIDE.md).
 
+For the phased roadmap and current source of truth for future development, see [PHASED_DEVELOPMENT_PLAN.md](/semantic-orchestrator/PHASED_DEVELOPMENT_PLAN.md).
+
 ## Environment variables
 
 ### Node bridge
@@ -45,6 +47,15 @@ For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md
 ```bash
 ORCHESTRATION_API_PORT=3010
 ORCHESTRATION_API_KEY=your-shared-secret
+INTEGRATION_MODE=mcp
+ATLASSIAN_MCP_URL=https://mcp.atlassian.com/v1/mcp
+ATLASSIAN_MCP_CREATE_ISSUE_TOOL=createJiraIssue
+ATLASSIAN_MCP_EMAIL=your-email@example.com
+ATLASSIAN_MCP_API_TOKEN=your-atlassian-api-token
+SLACK_MCP_URL=https://mcp.slack.com/mcp
+SLACK_MCP_SEND_MESSAGE_TOOL=send_message
+SLACK_MCP_AUTH_HEADER=Bearer your-slack-mcp-access-token
+SLACK_MCP_APP_ID=your-slack-app-id
 ```
 
 ### Semantic Kernel

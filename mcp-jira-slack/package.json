@@ -6,6 +6,8 @@
   "scripts": {
     "start:mcp": "node server.js",
     "start:bridge": "node http-bridge.js",
+    "discover:atlassian-mcp": "node scripts/discover-atlassian-mcp.js",
+    "verify:atlassian-mcp": "node scripts/verify-atlassian-mcp.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

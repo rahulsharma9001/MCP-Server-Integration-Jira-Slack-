@@ -1,22 +1,9 @@
-import axios from "axios";
 import { getRuntimeConfig } from "../config.js";
+import { callRemoteMcpTool } from "./mcp-client.js";
 
-function buildAdfDescription(descriptionText) {
-  return {
-    type: "doc",
-    version: 1,
-    content: [
-      {
-        type: "paragraph",
-        content: [
-          {
-            type: "text",
-            text: descriptionText
-          }
-        ]
-      }
-    ]
-  };
+function extractIssueKey(text) {
+  const match = text.match(/\b[A-Z][A-Z0-9]+-\d+\b/);
+  return match ? match[0] : null;
 }
 
 export async function createJiraTicket({
@@ -29,34 +16,41 @@ export async function createJiraTicket({
     const config = getRuntimeConfig();
     const resolvedProjectKey = projectKey || config.jiraProjectKey;
 
-    if (!config.jiraBaseUrl || !resolvedProjectKey) {
-      throw new Error("Jira env variables missing");
+    if (config.integrationMode !== "mcp") {
+      throw new Error("Only MCP integration mode is supported in this setup");
     }
 
-    const response = await axios.post(
-      `${config.jiraBaseUrl}/rest/api/3/issue`,
-      {
-        fields: {
-          project: { key: resolvedProjectKey },
-          summary,
-          description: buildAdfDescription(description),
-          issuetype: { name: issueType }
-        }
-      },
-      {
-        auth: {
-          username: config.jiraEmail,
-          password: config.jiraApiToken
-        },
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
-    );
+    if (!resolvedProjectKey) {
+      throw new Error("JIRA_PROJECT_KEY is missing");
+    }
 
-    return response.data;
+    if (!config.atlassianCloudId) {
+      throw new Error(
+        "ATLASSIAN_CLOUD_ID is missing. Discover it first and add it to the root .env."
+      );
+    }
+
+    const mcpResult = await callRemoteMcpTool({
+      serverName: "Atlassian",
+      serverUrl: config.atlassianMcpUrl,
+      authHeader: config.atlassianMcpAuthHeader,
+      toolName: config.atlassianMcpCreateIssueTool,
+      args: {
+        cloudId: config.atlassianCloudId,
+        projectKey: resolvedProjectKey,
+        issueTypeName: issueType,
+        summary,
+        description
+      }
+    });
+
+    return {
+      key: extractIssueKey(mcpResult.text),
+      rawText: mcpResult.text,
+      structuredContent: mcpResult.structuredContent
+    };
   } catch (error) {
-    const realError = error.response?.data || error.message;
+    const realError = error.message;
     console.error("❌ Jira FULL Error:", realError);
 
     throw new Error(

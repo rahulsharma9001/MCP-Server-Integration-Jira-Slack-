@@ -107,7 +107,7 @@ export function createMcpServer() {
           content: [
             {
               type: "text",
-              text: `✅ Jira Ticket Created: ${workflowResult.jira.key}.${warningText}`
+              text: `✅ Jira Ticket Created: ${workflowResult.jira.key || workflowResult.jira.rawText || "created"}.${warningText}`
             }
           ]
         };
