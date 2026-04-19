@@ -2,3 +2,6 @@ mcp-jira-slack/node_modules
 node_modules
 .env
 .codex
+semantic-orchestrator/__pycache__
+.github
+semantic-orchestrator/.venv
