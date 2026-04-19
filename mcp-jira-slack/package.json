@@ -8,6 +8,9 @@
     "start:bridge": "node http-bridge.js",
     "discover:atlassian-mcp": "node scripts/discover-atlassian-mcp.js",
     "verify:atlassian-mcp": "node scripts/verify-atlassian-mcp.js",
+    "discover:slack-mcp": "node scripts/discover-slack-mcp.js",
+    "verify:slack-mcp": "node scripts/verify-slack-mcp.js",
+    "smoke:mcp-bridge": "node scripts/smoke-mcp-bridge.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

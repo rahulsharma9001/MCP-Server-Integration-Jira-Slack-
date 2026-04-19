@@ -53,9 +53,11 @@ ATLASSIAN_MCP_CREATE_ISSUE_TOOL=createJiraIssue
 ATLASSIAN_MCP_EMAIL=your-email@example.com
 ATLASSIAN_MCP_API_TOKEN=your-atlassian-api-token
 SLACK_MCP_URL=https://mcp.slack.com/mcp
-SLACK_MCP_SEND_MESSAGE_TOOL=send_message
+SLACK_MCP_SEND_MESSAGE_TOOL=slack_send_message
 SLACK_MCP_AUTH_HEADER=Bearer your-slack-mcp-access-token
 SLACK_MCP_APP_ID=your-slack-app-id
+SLACK_MCP_CHANNEL_ARG=channel_id
+SLACK_MCP_TEXT_ARG=message
 ```
 
 ### Semantic Kernel

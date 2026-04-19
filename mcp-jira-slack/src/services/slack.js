@@ -22,16 +22,18 @@ export async function sendSlackMessage(channel, text) {
     }
 
     const normalizedChannel = normalizeSlackChannel(channel);
+    const toolArgs = {
+      [config.slackMcpChannelArg]: normalizedChannel,
+      [config.slackMcpTextArg]: text
+    };
+
     const mcpResult = await callRemoteMcpTool({
       serverName: "Slack",
       serverUrl: config.slackMcpUrl,
       authHeader: config.slackMcpAuthHeader,
       appId: config.slackMcpAppId,
       toolName: config.slackMcpSendMessageTool,
-      args: {
-        channel: normalizedChannel,
-        text
-      }
+      args: toolArgs
     });
 
     return {

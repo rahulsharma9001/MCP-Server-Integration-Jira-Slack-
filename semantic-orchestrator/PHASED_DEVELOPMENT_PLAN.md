@@ -49,20 +49,16 @@ The project should follow these principles while moving through the phases:
 
 ## Current Position
 
-At the time of writing (17 April 2026), the project already has the following in place:
+At the time of writing (19 April 2026), the project already has the following in place:
 
 - a working Semantic Kernel sidecar in `semantic-orchestrator/`
 - Ollama as the local LLM provider
 - a deterministic execution path for simple operational requests
 - a local Node HTTP bridge
-- a refactored Node service layer that is moving toward MCP-backed Jira and Slack integration
-
-What is not fully complete yet:
-
+- a refactored Node service layer executing Jira and Slack through MCP
 - end-to-end verification of Atlassian MCP-backed Jira creation
 - end-to-end verification of Slack MCP-backed message sending
-- final confirmation of remote MCP auth and tool naming for both vendors
-- final tightening of the docs after those integrations are verified
+- semantic-orchestrator execution verified with Jira + Slack MCP-backed flow
 
 ## Phase 1: Lock the MCP-Only Architecture
 
@@ -179,13 +175,13 @@ ATLASSIAN_MCP_AUTH_HEADER=Basic base64(email:api_token)
 
 ### Status
 
-In progress.
+Completed for the current environment.
 
 Current implementation support:
 
 - the bridge is already wired to call Atlassian MCP
 - an Atlassian MCP verification script now exists at `mcp-jira-slack/scripts/verify-atlassian-mcp.js`
-- the current blocker is missing Atlassian MCP auth configuration in `.env`
+- Atlassian tool discovery and Jira issue creation are now verified end-to-end through MCP
 
 ## Phase 3: Complete Slack MCP Integration
 
@@ -207,9 +203,11 @@ The current expected env vars are:
 
 ```bash
 SLACK_MCP_URL=https://mcp.slack.com/mcp
-SLACK_MCP_SEND_MESSAGE_TOOL=send_message
+SLACK_MCP_SEND_MESSAGE_TOOL=slack_send_message
 SLACK_MCP_AUTH_HEADER=Bearer your-slack-mcp-access-token
 SLACK_MCP_APP_ID=your-slack-app-id
+SLACK_MCP_CHANNEL_ARG=channel_id
+SLACK_MCP_TEXT_ARG=message
 ```
 
 These may need to be adjusted once the real Slack MCP server response is tested.
@@ -242,7 +240,19 @@ These may need to be adjusted once the real Slack MCP server response is tested.
 
 ### Status
 
-Blocked on confirmed Slack MCP credentials and server behavior.
+Completed for the current environment.
+
+Current implementation support:
+
+- Slack MCP discovery script: `npm run discover:slack-mcp`
+- Slack MCP verification script: `npm run verify:slack-mcp`
+- Slack tool argument mapping is now environment-driven through:
+  - `SLACK_MCP_CHANNEL_ARG`
+  - `SLACK_MCP_TEXT_ARG`
+- verified tool mapping in this environment:
+  - `SLACK_MCP_SEND_MESSAGE_TOOL=slack_send_message`
+  - `SLACK_MCP_CHANNEL_ARG=channel_id`
+  - `SLACK_MCP_TEXT_ARG=message`
 
 ## Phase 4: Tighten Semantic Kernel Orchestration
 
@@ -269,6 +279,16 @@ The LLM layer should not be blamed for vendor configuration problems. It is much
 - test Jira-only orchestrator requests
 - test Jira + Slack orchestrator requests
 - test failure scenarios and ensure the output remains trustworthy
+
+### Status
+
+Completed for the current environment.
+
+Current implementation support:
+
+- deterministic path executes operational requests through the bridge
+- Jira + Slack MCP-backed orchestration flow verified end-to-end
+- output summary reflects actual action results (for deterministic request shapes)
 
 ### Exit criteria
 

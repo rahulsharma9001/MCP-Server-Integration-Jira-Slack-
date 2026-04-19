@@ -33,11 +33,7 @@ export function getRuntimeConfig() {
     );
 
   return {
-    jiraBaseUrl: process.env.JIRA_BASE_URL,
     jiraProjectKey: process.env.JIRA_PROJECT_KEY,
-    jiraEmail: process.env.JIRA_EMAIL,
-    jiraApiToken: process.env.JIRA_API_TOKEN,
-    slackBotToken: process.env.SLACK_BOT_TOKEN,
     defaultSlackChannel: process.env.DEFAULT_SLACK_CHANNEL,
     orchestrationApiPort: Number(process.env.ORCHESTRATION_API_PORT || 3010),
     orchestrationApiKey: process.env.ORCHESTRATION_API_KEY || "",
@@ -51,7 +47,9 @@ export function getRuntimeConfig() {
     slackMcpUrl: process.env.SLACK_MCP_URL || "https://mcp.slack.com/mcp",
     slackMcpAuthHeader: process.env.SLACK_MCP_AUTH_HEADER || "",
     slackMcpAppId: process.env.SLACK_MCP_APP_ID || "",
-    slackMcpSendMessageTool: process.env.SLACK_MCP_SEND_MESSAGE_TOOL || "send_message"
+    slackMcpSendMessageTool: process.env.SLACK_MCP_SEND_MESSAGE_TOOL || "send_message",
+    slackMcpChannelArg: process.env.SLACK_MCP_CHANNEL_ARG || "channel",
+    slackMcpTextArg: process.env.SLACK_MCP_TEXT_ARG || "text"
   };
 }
 
@@ -70,5 +68,7 @@ export function logStartupContext(prefix = "MCP Server") {
   console.error("SLACK_MCP_URL:", config.slackMcpUrl);
   console.error("SLACK_MCP_TOOL:", config.slackMcpSendMessageTool);
   console.error("SLACK_MCP_AUTH:", config.slackMcpAuthHeader ? "configured" : "missing");
+  console.error("SLACK_MCP_CHANNEL_ARG:", config.slackMcpChannelArg);
+  console.error("SLACK_MCP_TEXT_ARG:", config.slackMcpTextArg);
   console.error("ENV FILE:", envPath || "not found");
 }

@@ -72,10 +72,12 @@ ATLASSIAN_MCP_API_TOKEN=your-atlassian-api-token
 
 # Slack MCP
 SLACK_MCP_URL=https://mcp.slack.com/mcp
-SLACK_MCP_SEND_MESSAGE_TOOL=send_message
+SLACK_MCP_SEND_MESSAGE_TOOL=slack_send_message
 SLACK_MCP_AUTH_HEADER=Bearer your-slack-mcp-access-token
 # Optional, depending on your Slack MCP setup:
 SLACK_MCP_APP_ID=your-slack-app-id
+SLACK_MCP_CHANNEL_ARG=channel_id
+SLACK_MCP_TEXT_ARG=message
 
 # Ollama
 LLM_PROVIDER=ollama
@@ -285,7 +287,7 @@ This deterministic path exists so that common operational commands execute relia
 ## MCP-Specific Notes
 
 - The Atlassian MCP tool name defaults to `createJiraIssue`, which matches Atlassian's documented Jira create tool.
-- The Slack MCP tool name may vary depending on your Slack MCP configuration. If `send_message` does not exist on your Slack MCP server, the bridge will return an error listing the available tools. Update `SLACK_MCP_SEND_MESSAGE_TOOL` in `.env` to match the actual tool name.
+- The Slack MCP tool name may vary depending on your Slack MCP configuration. In this validated setup it is `slack_send_message`, and the argument mapping is `channel_id` + `message`.
 - The current implementation uses auth headers from `.env`. That keeps the process feasible for backend automation, but it assumes you have already completed any required vendor-side OAuth or token provisioning outside this repo.
 
 ## Common Problems and Fixes
@@ -386,6 +388,13 @@ If you only want the shortest possible working sequence:
 
 ```bash
 python orchestrator.py "Create a Jira task titled Ollama integration test and notify Slack that the ticket was created"
+```
+
+For a quick bridge-level confidence check while `npm run start:bridge` is running, you can also run:
+
+```bash
+cd /home/nashtech/Desktop/jira-mcp-server/mcp-jira-slack
+npm run smoke:mcp-bridge
 ```
 
 If the Jira ticket is created and Slack receives the notification, the end-to-end setup is working.
