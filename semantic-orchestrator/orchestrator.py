@@ -93,20 +93,50 @@ def build_kernel() -> Kernel:
     return kernel
 
 
+def _strip_slack_followup_clause(user_request: str) -> str:
+    # Keep only the Jira-intent segment for extraction (drop "and notify ... Slack ..." tails).
+    followup_match = re.search(
+        r"\b(?:and|then|once|after)\b[^.?!\n]*\b(?:notify|inform|post|send)\b[^.?!\n]*\bslack\b",
+        user_request,
+        flags=re.IGNORECASE,
+    )
+    if followup_match:
+        return user_request[: followup_match.start()].strip()
+    return user_request.strip()
+
+
+def _clean_extracted_text(text: str) -> str:
+    cleaned = text.strip().strip(" ,.;:!\"'")
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned
+
+
 def _extract_quoted_or_titled_text(user_request: str) -> str | None:
+    request = _strip_slack_followup_clause(user_request)
+
+    quoted_patterns = [
+        r'"([^"]+)"',
+        r"'([^']+)'",
+    ]
+    for pattern in quoted_patterns:
+        match = re.search(pattern, request)
+        if match:
+            return _clean_extracted_text(match.group(1))
+
     patterns = [
-        r'titled\s+"([^"]+)"',
-        r"titled\s+'([^']+)'",
-        r'titled\s+([^,.]+?)(?:\s+and\s+notify\s+slack|\s*$)',
-        r'saying\s+"([^"]+)"',
-        r"saying\s+'([^']+)'",
-        r'saying\s+([^,.]+?)(?:\s*$)',
+        r"titled\s+(.+)$",
+        r"saying\s+(.+)$",
+        r"(?:jira\s+)?(?:bug|task|ticket|issue)\s+(?:for|about|regarding)\s+(.+)$",
+        r"create\s+(?:a|an)?\s*(?:jira\s+)?(?:bug|task|ticket|issue)\s+(.+)$",
+        r"log\s+(?:a|an)?\s*(?:jira\s+)?(?:bug|task|ticket|issue)\s+(.+)$",
     ]
 
     for pattern in patterns:
-        match = re.search(pattern, user_request, flags=re.IGNORECASE)
+        match = re.search(pattern, request, flags=re.IGNORECASE)
         if match:
-            return match.group(1).strip()
+            extracted = _clean_extracted_text(match.group(1))
+            if extracted:
+                return extracted
     return None
 
 

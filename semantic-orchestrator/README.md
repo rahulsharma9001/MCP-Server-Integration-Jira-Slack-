@@ -38,6 +38,8 @@ For a deeper explanation of how the Ollama-based orchestration works in this pro
 
 For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/END_TO_END_RUN_GUIDE.md).
 
+For a component-by-component explanation of runtime behavior, see [COMPONENTS_REFERENCE.md](/semantic-orchestrator/COMPONENTS_REFERENCE.md).
+
 For the phased roadmap and current source of truth for future development, see [PHASED_DEVELOPMENT_PLAN.md](/semantic-orchestrator/PHASED_DEVELOPMENT_PLAN.md).
 
 ## Environment variables
