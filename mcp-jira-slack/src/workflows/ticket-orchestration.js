@@ -27,6 +27,10 @@ export async function orchestrateTicketCreation({
   });
 
   result.jira = ticket;
+  if (!ticket?.key) {
+    result.warnings.push("Jira ticket key is missing. Slack notification was skipped.");
+    return result;
+  }
 
   const resolvedChannel = slackChannel || config.defaultSlackChannel;
   if (!notifySlack || !resolvedChannel) {

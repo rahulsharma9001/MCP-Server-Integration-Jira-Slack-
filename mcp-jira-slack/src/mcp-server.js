@@ -5,6 +5,7 @@ import {
   ListToolsRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
 import { normalizeSlackChannel, sendSlackMessage } from "./services/slack.js";
+import { orchestrateStatusUpdate } from "./workflows/status-orchestration.js";
 import { orchestrateTicketCreation } from "./workflows/ticket-orchestration.js";
 
 export function createMcpServer() {
@@ -61,6 +62,21 @@ export function createMcpServer() {
             },
             required: ["summary", "description"]
           }
+        },
+        {
+          name: "update_jira_status",
+          description: "Update Jira issue status and optionally notify Slack",
+          inputSchema: {
+            type: "object",
+            properties: {
+              issueIdentifier: { type: "string" },
+              targetStatus: { type: "string" },
+              projectKey: { type: "string" },
+              notifySlack: { type: "boolean" },
+              slackChannel: { type: "string" }
+            },
+            required: ["issueIdentifier", "targetStatus"]
+          }
         }
       ]
     };
@@ -108,6 +124,29 @@ export function createMcpServer() {
             {
               type: "text",
               text: `✅ Jira Ticket Created: ${workflowResult.jira.key || workflowResult.jira.rawText || "created"}.${warningText}`
+            }
+          ]
+        };
+      }
+
+      if (name === "update_jira_status") {
+        const workflowResult = await orchestrateStatusUpdate({
+          issueIdentifier: args.issueIdentifier,
+          targetStatus: args.targetStatus,
+          projectKey: args.projectKey,
+          notifySlack: args.notifySlack !== false,
+          slackChannel: args.slackChannel
+        });
+
+        const warningText = workflowResult.warnings.length
+          ? ` Warning: ${workflowResult.warnings.join(" | ")}`
+          : "";
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✅ Jira Status Updated: ${workflowResult.jira.key} -> ${workflowResult.jira.transition}.${warningText}`
             }
           ]
         };

@@ -1,6 +1,7 @@
 import http from "http";
 import { getRuntimeConfig, logStartupContext } from "./src/config.js";
 import { orchestrateTicketCreation } from "./src/workflows/ticket-orchestration.js";
+import { orchestrateStatusUpdate } from "./src/workflows/status-orchestration.js";
 import { sendSlackMessage } from "./src/services/slack.js";
 
 function writeJson(response, statusCode, body) {
@@ -72,6 +73,24 @@ const server = http.createServer(async (request, response) => {
         summary: body.summary,
         description: body.description,
         issueType: body.issueType || "Task",
+        projectKey: body.projectKey,
+        notifySlack: body.notifySlack !== false,
+        slackChannel: body.slackChannel,
+        slackMessage: body.slackMessage
+      });
+
+      writeJson(response, 200, {
+        ok: true,
+        result: workflowResult
+      });
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/actions/update-jira-status") {
+      const body = await parseJsonBody(request);
+      const workflowResult = await orchestrateStatusUpdate({
+        issueIdentifier: body.issueIdentifier,
+        targetStatus: body.targetStatus,
         projectKey: body.projectKey,
         notifySlack: body.notifySlack !== false,
         slackChannel: body.slackChannel,

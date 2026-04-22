@@ -32,6 +32,35 @@ function extractTextContent(result) {
   return "";
 }
 
+function tryParseJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function extractMcpError(result, text) {
+  if (result?.isError) {
+    return text || "MCP tool returned isError=true";
+  }
+
+  const parsedText = typeof text === "string" ? tryParseJson(text) : null;
+  if (parsedText?.error === true) {
+    return parsedText.message || text;
+  }
+
+  const structured = result?.structuredContent;
+  if (structured && typeof structured === "object" && structured.error === true) {
+    if (typeof structured.message === "string" && structured.message.trim()) {
+      return structured.message;
+    }
+    return JSON.stringify(structured);
+  }
+
+  return null;
+}
+
 export async function callRemoteMcpTool({
   serverName,
   serverUrl,
@@ -75,10 +104,15 @@ export async function callRemoteMcpTool({
       name: toolName,
       arguments: args
     });
+    const text = extractTextContent(result);
+    const mcpError = extractMcpError(result, text);
+    if (mcpError) {
+      throw new Error(`${serverName} MCP tool '${toolName}' failed: ${mcpError}`);
+    }
 
     return {
       raw: result,
-      text: extractTextContent(result),
+      text,
       structuredContent: result.structuredContent || null
     };
   } finally {

@@ -49,7 +49,7 @@ The project should follow these principles while moving through the phases:
 
 ## Current Position
 
-At the time of writing (19 April 2026), the project already has the following in place:
+At the time of writing (20 April 2026), the project already has the following in place:
 
 - a working Semantic Kernel sidecar in `semantic-orchestrator/`
 - Ollama as the local LLM provider
@@ -59,6 +59,7 @@ At the time of writing (19 April 2026), the project already has the following in
 - end-to-end verification of Atlassian MCP-backed Jira creation
 - end-to-end verification of Slack MCP-backed message sending
 - semantic-orchestrator execution verified with Jira + Slack MCP-backed flow
+- interactive clarification mode in the orchestrator (`python orchestrator.py --interactive ...`) for multi-turn missing-input handling
 
 ## Phase 1: Lock the MCP-Only Architecture
 
@@ -268,6 +269,7 @@ The LLM layer should not be blamed for vendor configuration problems. It is much
 
 - keep deterministic execution for simple operational requests
 - reserve the LLM path for more open-ended or multi-step intent interpretation
+- support interactive follow-up capture in the same CLI session when the LLM needs missing inputs
 - improve execution summaries so they are grounded in actual bridge results
 - improve failure handling when Jira succeeds but Slack fails
 - reduce misleading model-written summaries wherever possible
@@ -289,6 +291,10 @@ Current implementation support:
 - deterministic path executes operational requests through the bridge
 - Jira + Slack MCP-backed orchestration flow verified end-to-end
 - output summary reflects actual action results (for deterministic request shapes)
+- interactive mode now supports real-time clarification and continuation in one run:
+  - command: `python orchestrator.py --interactive "<your request>"`
+  - if the model asks follow-up questions, user replies are captured and appended to conversation context
+  - orchestration continues until an execution summary is produced or the user exits
 
 ### Exit criteria
 

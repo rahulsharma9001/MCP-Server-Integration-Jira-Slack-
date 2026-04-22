@@ -25,6 +25,21 @@ class JiraSlackBridgePlugin:
             headers["x-api-key"] = self.api_key
         return headers
 
+    def _post_json(self, path: str, payload: dict[str, Any]) -> str:
+        response = requests.post(
+            f"{self.base_url}{path}",
+            json=payload,
+            headers=self._headers(),
+            timeout=30,
+        )
+        if not response.ok:
+            body = response.text.strip()
+            raise requests.HTTPError(
+                f"{response.status_code} {response.reason} for {path}. "
+                f"Bridge response: {body or 'empty body'}"
+            )
+        return response.text
+
     @kernel_function(
         name="create_jira_ticket",
         description="Create a Jira ticket and optionally notify Slack using the Node bridge."
@@ -54,14 +69,7 @@ class JiraSlackBridgePlugin:
             "slackMessage": slack_message or None,
         }
 
-        response = requests.post(
-            f"{self.base_url}/actions/create-jira-ticket",
-            json=payload,
-            headers=self._headers(),
-            timeout=30,
-        )
-        response.raise_for_status()
-        return response.text
+        return self._post_json("/actions/create-jira-ticket", payload)
 
     @kernel_function(
         name="send_slack_message",
@@ -73,14 +81,37 @@ class JiraSlackBridgePlugin:
         channel: Annotated[str, "Slack channel name or ID. Leave empty to use the default channel."] = "",
     ) -> str:
         resolved_channel = channel or self.default_slack_channel
-        response = requests.post(
-            f"{self.base_url}/actions/send-slack-message",
-            json={"channel": resolved_channel, "text": text},
-            headers=self._headers(),
-            timeout=30,
+        return self._post_json(
+            "/actions/send-slack-message",
+            {"channel": resolved_channel, "text": text},
         )
-        response.raise_for_status()
-        return response.text
+
+    @kernel_function(
+        name="update_jira_status",
+        description="Update Jira issue status (transition) and optionally notify Slack using the Node bridge."
+    )
+    def update_jira_status(
+        self,
+        issue_identifier: Annotated[
+            str,
+            "Jira issue key (e.g., SCRUM-123) or a unique issue summary/title."
+        ],
+        target_status: Annotated[str, "Target Jira workflow status (e.g., In Progress, Done)."],
+        project_key: Annotated[str, "Jira project key. Leave empty to use the default project."] = "",
+        notify_slack: Annotated[bool, "Whether Slack should be notified after status update."] = True,
+        slack_channel: Annotated[str, "Slack channel override. Leave empty to use the default channel."] = "",
+        slack_message: Annotated[str, "Custom Slack message. Leave empty to let the server build it."] = ""
+    ) -> str:
+        payload = {
+            "issueIdentifier": issue_identifier,
+            "targetStatus": target_status,
+            "projectKey": project_key or None,
+            "notifySlack": notify_slack,
+            "slackChannel": slack_channel or None,
+            "slackMessage": slack_message or None,
+        }
+
+        return self._post_json("/actions/update-jira-status", payload)
 
     @kernel_function(
         name="get_execution_policy",

@@ -44,6 +44,14 @@ export function getRuntimeConfig() {
       process.env.ATLASSIAN_CLOUD_ID || process.env.ATLASSIAN_MCP_CLOUD_ID || "",
     atlassianMcpCreateIssueTool:
       process.env.ATLASSIAN_MCP_CREATE_ISSUE_TOOL || "createJiraIssue",
+    atlassianMcpGetIssueTool:
+      process.env.ATLASSIAN_MCP_GET_ISSUE_TOOL || "getJiraIssue",
+    atlassianMcpSearchIssuesTool:
+      process.env.ATLASSIAN_MCP_SEARCH_ISSUES_TOOL || "searchJiraIssuesUsingJql",
+    atlassianMcpGetTransitionsTool:
+      process.env.ATLASSIAN_MCP_GET_TRANSITIONS_TOOL || "getTransitionsForJiraIssue",
+    atlassianMcpTransitionIssueTool:
+      process.env.ATLASSIAN_MCP_TRANSITION_ISSUE_TOOL || "transitionJiraIssue",
     slackMcpUrl: process.env.SLACK_MCP_URL || "https://mcp.slack.com/mcp",
     slackMcpAuthHeader: process.env.SLACK_MCP_AUTH_HEADER || "",
     slackMcpAppId: process.env.SLACK_MCP_APP_ID || "",
@@ -62,6 +70,10 @@ export function logStartupContext(prefix = "MCP Server") {
   console.error("JIRA_PROJECT_KEY:", config.jiraProjectKey);
   console.error("ATLASSIAN_MCP_URL:", config.atlassianMcpUrl);
   console.error("ATLASSIAN_MCP_TOOL:", config.atlassianMcpCreateIssueTool);
+  console.error("ATLASSIAN_MCP_GET_ISSUE_TOOL:", config.atlassianMcpGetIssueTool);
+  console.error("ATLASSIAN_MCP_SEARCH_TOOL:", config.atlassianMcpSearchIssuesTool);
+  console.error("ATLASSIAN_MCP_GET_TRANSITIONS_TOOL:", config.atlassianMcpGetTransitionsTool);
+  console.error("ATLASSIAN_MCP_TRANSITION_TOOL:", config.atlassianMcpTransitionIssueTool);
   console.error("ATLASSIAN_MCP_AUTH:", config.atlassianMcpAuthHeader ? "configured" : "missing");
   console.error("ATLASSIAN_CLOUD_ID:", config.atlassianCloudId ? "configured" : "missing");
   console.error("SLACK_CHANNEL:", config.defaultSlackChannel);

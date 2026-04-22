@@ -262,6 +262,23 @@ Expected result:
 - Slack receives a notification in the default channel
 - the terminal prints a real execution summary using the bridge response
 
+### Test 6. Use interactive clarification mode (new)
+
+If your prompt is ambiguous or missing required details, run the orchestrator in interactive mode:
+
+```bash
+python orchestrator.py --interactive "Create a Jira bug for the reported login issue and notify Slack"
+```
+
+How this works:
+
+- first, deterministic execution is attempted for common request patterns
+- if details are missing, Semantic Kernel + the LLM asks a concise follow-up
+- you can provide the missing input in real time in the same terminal session
+- once enough information is available, the action is executed and the execution summary is printed
+
+To stop an interactive session, type `exit` when prompted.
+
 ## What Happens Internally During Orchestration
 
 For a simple request like:
@@ -283,6 +300,8 @@ the flow is:
 9. The terminal prints the result.
 
 This deterministic path exists so that common operational commands execute reliably even when local-model tool calling is inconsistent.
+
+For prompts that require clarification, `--interactive` keeps a short conversation context in memory so the LLM can consume your follow-up answers and continue execution without restarting from scratch.
 
 ## MCP-Specific Notes
 
