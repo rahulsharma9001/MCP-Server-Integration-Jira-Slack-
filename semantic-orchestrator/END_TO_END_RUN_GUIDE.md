@@ -105,7 +105,8 @@ From the orchestrator directory:
 ```bash
 cd /home/nashtech/Desktop/jira-mcp-server/semantic-orchestrator
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate (For Linux)
+.venv\Scripts\Activate (For Windows)
 pip install -r requirements.txt
 ```
 
@@ -137,7 +138,12 @@ Open Terminal 1:
 
 ```bash
 cd /home/nashtech/Desktop/jira-mcp-server/mcp-jira-slack
+
 npm run start:bridge
+
+      OR
+
+node http-bridge.js 
 ```
 
 Expected behavior:
@@ -172,7 +178,10 @@ Open Terminal 3:
 
 ```bash
 cd /home/nashtech/Desktop/jira-mcp-server/semantic-orchestrator
-source .venv/bin/activate
+
+source .venv/bin/activate (For Linux)
+
+.venv\Scripts\Activate (For Windows)
 ```
 
 Now the orchestrator commands will use the correct Python environment and installed dependencies.
@@ -302,6 +311,34 @@ the flow is:
 This deterministic path exists so that common operational commands execute reliably even when local-model tool calling is inconsistent.
 
 For prompts that require clarification, `--interactive` keeps a short conversation context in memory so the LLM can consume your follow-up answers and continue execution without restarting from scratch.
+
+## Reasoning Mode: How LLM Execution Actually Works
+
+When deterministic execution does not match a request shape, the orchestrator uses Semantic Kernel reasoning mode.
+
+Internal mechanism:
+
+1. `orchestrator.py` sends a prompt with execution policy + user request (+ prior interactive turns).
+2. Semantic Kernel invokes the selected provider from `.env`:
+   - `LLM_PROVIDER=ollama`
+   - `LLM_PROVIDER=openai`
+   - `LLM_PROVIDER=azure-openai`
+3. Tool-calling is enabled via `FunctionChoiceBehavior.Auto(...)`, restricted to plugin `JiraSlackBridge`.
+4. The LLM can only execute actions by calling plugin functions in `bridge_plugin.py`.
+5. Plugin functions call Node bridge endpoints:
+   - `/actions/create-jira-ticket`
+   - `/actions/send-slack-message`
+   - `/actions/update-jira-status`
+6. Node bridge performs Jira/Slack side effects through Atlassian MCP and Slack MCP.
+
+This means reasoning text alone does not count as execution. Real execution is only confirmed when the bridge call returns successfully and side effects are visible in Jira/Slack.
+
+### Safety and trust behavior
+
+- Deterministic path is attempted first for reliability.
+- If the LLM returns a success-looking summary without bridge-grounded execution format, the summary is treated as untrusted.
+- The orchestrator then attempts a reasoned follow-through bridge execution using conversation context.
+- If that still fails, the CLI asks for an explicit actionable command instead of showing false success.
 
 ## MCP-Specific Notes
 

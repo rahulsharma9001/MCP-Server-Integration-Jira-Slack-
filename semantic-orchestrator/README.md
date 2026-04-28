@@ -34,6 +34,34 @@ HTTP Bridge (Node.js)
 - asks for follow-up when inputs are incomplete
 - returns an execution summary
 
+## Reasoning Mode Mechanism
+
+When the orchestrator cannot complete a request through deterministic parsing, it switches to Semantic Kernel reasoning mode.
+
+Execution pipeline in reasoning mode:
+
+1. `orchestrator.py` builds a prompt from:
+   - system execution policy
+   - latest user request
+   - conversation context (interactive mode)
+2. Semantic Kernel invokes the configured LLM provider (`ollama`, `openai`, or `azure-openai`).
+3. Tool-calling is enabled with `FunctionChoiceBehavior.Auto(...)` and plugin filter `JiraSlackBridge`.
+4. The LLM can call only bridge plugin functions:
+   - `create_jira_ticket`
+   - `send_slack_message`
+   - `update_jira_status`
+   - `get_execution_policy`
+5. `bridge_plugin.py` converts those function calls into HTTP requests to the Node bridge endpoints (`/actions/...`).
+6. The Node bridge performs real Jira/Slack side effects through Atlassian MCP and Slack MCP.
+7. The orchestrator prints a summary grounded in returned bridge results.
+
+Reliability guardrails:
+
+- Deterministic path is attempted first for common operational request shapes.
+- If an LLM response claims success without bridge-grounded evidence, it is treated as untrusted.
+- A reasoned follow-through fallback then tries to execute the action through the bridge using parsed conversation intent.
+- If execution still cannot be verified, the orchestrator asks for a direct actionable command instead of reporting false success.
+
 For a deeper explanation of how the Ollama-based orchestration works in this project, see [OLLAMA_ORCHESTRATION.md](/semantic-orchestrator/OLLAMA_ORCHESTRATION.md).
 
 For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/END_TO_END_RUN_GUIDE.md).
