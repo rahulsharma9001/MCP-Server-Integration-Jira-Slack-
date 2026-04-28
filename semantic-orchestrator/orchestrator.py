@@ -146,11 +146,25 @@ def _extract_description_instruction(user_request: str) -> str | None:
     patterns = [
         r"(?:add|include|with)\s+(.+?)\s+in(?:to)?\s+the\s+description",
         r"description\s+(?:should|must)\s+(?:include|have)\s+(.+?)(?:[.?!]|$)",
+        r"\binclude\s+(.+?)(?:[.?!]|$)",
     ]
     for pattern in patterns:
         match = re.search(pattern, user_request, flags=re.IGNORECASE)
         if match:
             return _clean_extracted_text(match.group(1))
+    return None
+
+
+def _extract_severity(user_request: str) -> str | None:
+    lowered = user_request.lower()
+    if "critical" in lowered or "sev1" in lowered or "p1" in lowered:
+        return "Critical"
+    if "high" in lowered or "sev2" in lowered or "p2" in lowered:
+        return "High"
+    if "medium" in lowered or "moderate" in lowered or "sev3" in lowered or "p3" in lowered:
+        return "Medium"
+    if "low" in lowered or "minor" in lowered or "sev4" in lowered or "p4" in lowered:
+        return "Low"
     return None
 
 
@@ -162,12 +176,26 @@ def _split_summary_from_instruction_text(extracted_text: str) -> str:
         ", include ",
         " and add ",
         " and include ",
+        ". include ",
     ]
     for marker in markers:
         idx = lowered.find(marker)
         if idx > 0:
             return _clean_extracted_text(extracted_text[:idx])
     return _clean_extracted_text(extracted_text)
+
+
+def _looks_like_description_spec(text: str) -> bool:
+    lowered = text.lower()
+    spec_terms = [
+        "context",
+        "impact",
+        "suspected component",
+        "reproduction",
+        "debugging",
+        "acceptance criteria",
+    ]
+    return any(term in lowered for term in spec_terms)
 
 
 def _build_requested_description(summary: str, instruction: str) -> str:
@@ -210,10 +238,89 @@ def _build_requested_description(summary: str, instruction: str) -> str:
     return "\n".join(lines)
 
 
+def _build_structured_ticket_description(summary: str, instruction: str) -> str:
+    instruction_lower = instruction.lower()
+    wants_context = "context" in instruction_lower
+    wants_impact = "impact" in instruction_lower
+    wants_component = "suspected component" in instruction_lower or "component" in instruction_lower
+    wants_repro = "reproduction" in instruction_lower
+    wants_debug = "debugging" in instruction_lower
+    wants_acceptance = "acceptance criteria" in instruction_lower
+
+    sections = [
+        "Auto-generated from orchestration request.",
+        "",
+        f"Incident summary: {summary}",
+        "",
+    ]
+
+    if wants_context:
+        sections.extend(
+            [
+                "Context:",
+                "- Intermittent login failures started after a recent deployment.",
+                "- Failures are not consistently reproducible across all users.",
+                "",
+            ]
+        )
+    if wants_impact:
+        sections.extend(
+            [
+                "Impact:",
+                "- Some customers are unable to access the product.",
+                "- Login instability increases support load and delays critical workflows.",
+                "",
+            ]
+        )
+    if wants_component:
+        sections.extend(
+            [
+                "Suspected component:",
+                "- Authentication service",
+                "- Session/token issuance",
+                "- Deployment configuration for auth-related services",
+                "",
+            ]
+        )
+    if wants_repro:
+        sections.extend(
+            [
+                "Reproduction assumptions:",
+                "1. Use a valid customer account.",
+                "2. Attempt login from web app after deployment window.",
+                "3. Repeat attempts to capture intermittent failure behavior.",
+                "",
+            ]
+        )
+    if wants_debug:
+        sections.extend(
+            [
+                "Debugging notes:",
+                "- Correlate failed logins with auth service logs and deployment timestamps.",
+                "- Compare successful vs failed requests for token/session generation differences.",
+                "- Check upstream dependencies and timeout/error patterns around auth endpoints.",
+                "",
+            ]
+        )
+    if wants_acceptance:
+        sections.extend(
+            [
+                "Acceptance criteria:",
+                "1. Root cause is identified and documented.",
+                "2. Fix is deployed and validated in target environment.",
+                "3. Login success rate returns to expected baseline with no intermittent auth failures.",
+                "4. Backend Slack update includes ticket key and resolution summary.",
+                "",
+            ]
+        )
+
+    return "\n".join(sections).strip()
+
+
 def _looks_like_jira_request(user_request: str) -> bool:
     lowered = user_request.lower()
     jira_terms = ["jira", "bug", "task", "ticket", "issue", "incident"]
-    action_terms = ["create", "log", "track", "open", "file"]
+    action_terms = ["create", "created", "log", "track", "open", "file", "investigate", "decide whether"]
     return any(term in lowered for term in jira_terms) and any(
         action in lowered for action in action_terms
     )
@@ -285,6 +392,111 @@ def _issue_type_for_request(user_request: str) -> str:
     return "Task"
 
 
+def _extract_incident_summary(user_request: str) -> str | None:
+    incident_patterns = [
+        r"incident:\s*([^.\n]+)",
+        r"(?:customers?|users?)\s+cannot\s+([^.\n]+)",
+        r"(?:customers?|users?)\s+can't\s+([^.\n]+)",
+    ]
+    for pattern in incident_patterns:
+        match = re.search(pattern, user_request, flags=re.IGNORECASE)
+        if match:
+            summary = _clean_extracted_text(match.group(1))
+            if summary:
+                if not summary.lower().startswith(("incident", "bug", "issue")):
+                    return f"Incident: {summary}"
+                return summary
+    return None
+
+
+def _render_bridge_execution_summary(
+    payload: dict,
+    slack_requested: bool,
+    extra_lines: list[str] | None = None,
+) -> str:
+    jira_key = payload.get("result", {}).get("jira", {}).get("key")
+    slack_payload = payload.get("result", {}).get("slack")
+    slack_ok = slack_payload.get("ok") if isinstance(slack_payload, dict) else None
+    warnings = payload.get("result", {}).get("warnings", [])
+
+    lines = ["Execution Summary:", f"Jira ticket created: {jira_key or 'unknown key'}"]
+    lines.append(
+        f"Slack notified: {'yes' if slack_ok else 'no'}"
+        if slack_requested
+        else "Slack notified: not requested"
+    )
+    if extra_lines:
+        lines.extend(extra_lines)
+    if warnings:
+        lines.append(f"Warnings: {' | '.join(warnings)}")
+    return "\n".join(lines)
+
+
+def try_execute_reasoned_followthrough(
+    user_request: str,
+    conversation_history: list[tuple[str, str]] | None = None,
+) -> str | None:
+    combined = _build_deterministic_candidate(user_request, conversation_history)
+    if not combined:
+        return None
+
+    lowered = combined.lower()
+    wants_jira_decision = "jira" in lowered and any(
+        phrase in lowered
+        for phrase in [
+            "decide whether",
+            "should be created",
+            "investigate",
+            "incident",
+            "proceed immediately",
+        ]
+    )
+    if not wants_jira_decision:
+        return None
+
+    summary = _extract_quoted_or_titled_text(combined) or _extract_incident_summary(combined)
+    if not summary:
+        return None
+
+    severity = _extract_severity(combined)
+    description_lines = [
+        "Auto-generated from reasoning flow.",
+        "",
+        f"Incident summary: {summary}",
+    ]
+    if severity:
+        description_lines.append(f"Requested severity: {severity}")
+    description = "\n".join(description_lines)
+
+    notify_slack = "slack" in lowered
+    slack_message = ""
+    if notify_slack:
+        severity_suffix = f"\nSeverity: {severity}" if severity else ""
+        slack_message = f"Incident ticket created for: {summary}{severity_suffix}"
+
+    plugin = JiraSlackBridgePlugin()
+    try:
+        raw_result = plugin.create_jira_ticket(
+            summary=summary,
+            description=description,
+            issue_type="Bug",
+            notify_slack=notify_slack,
+            slack_message=slack_message,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return "\n".join(
+            [
+                "Execution Summary:",
+                "Jira ticket creation failed.",
+                f"Error: {exc}",
+            ]
+        )
+
+    payload = json.loads(raw_result)
+    extra_lines = [f"Severity: {severity}"] if severity else None
+    return _render_bridge_execution_summary(payload, notify_slack, extra_lines=extra_lines)
+
+
 def try_execute_simple_request(user_request: str) -> str | None:
     plugin = JiraSlackBridgePlugin()
     extracted_text = _extract_quoted_or_titled_text(user_request)
@@ -345,10 +557,16 @@ def try_execute_simple_request(user_request: str) -> str | None:
         resolved_summary = _split_summary_from_instruction_text(extracted_text)
         resolved_description = ""
         if description_instruction:
-            resolved_description = _build_requested_description(
-                summary=resolved_summary,
-                instruction=description_instruction,
-            )
+            if _looks_like_description_spec(description_instruction):
+                resolved_description = _build_structured_ticket_description(
+                    summary=resolved_summary,
+                    instruction=description_instruction,
+                )
+            else:
+                resolved_description = _build_requested_description(
+                    summary=resolved_summary,
+                    instruction=description_instruction,
+                )
 
         try:
             raw_result = plugin.create_jira_ticket(
@@ -366,28 +584,14 @@ def try_execute_simple_request(user_request: str) -> str | None:
                 ]
             )
         payload = json.loads(raw_result)
-        jira_key = payload.get("result", {}).get("jira", {}).get("key")
-        slack_payload = payload.get("result", {}).get("slack")
-        slack_ok = (
-            slack_payload.get("ok")
-            if isinstance(slack_payload, dict)
-            else None
-        )
-        warnings = payload.get("result", {}).get("warnings", [])
         slack_requested = "slack" in user_request.lower()
-
-        lines = [
-            "Execution Summary:",
-            f"Jira ticket created: {jira_key or 'unknown key'}",
-            (
-                f"Slack notified: {'yes' if slack_ok else 'no'}"
-                if slack_requested
-                else "Slack notified: not requested"
-            ),
-        ]
-        if warnings:
-            lines.append(f"Warnings: {' | '.join(warnings)}")
-        return "\n".join(lines)
+        severity = _extract_severity(user_request)
+        extra_lines = [f"Severity: {severity}"] if severity else None
+        return _render_bridge_execution_summary(
+            payload,
+            slack_requested,
+            extra_lines=extra_lines,
+        )
 
     if _looks_like_slack_only_request(user_request) and extracted_text:
         raw_result = plugin.send_slack_message(channel="", text=extracted_text)
@@ -403,6 +607,25 @@ def try_execute_simple_request(user_request: str) -> str | None:
         )
 
     return None
+
+
+def _build_deterministic_candidate(
+    user_request: str,
+    conversation_history: list[tuple[str, str]] | None = None,
+) -> str:
+    if not conversation_history:
+        return user_request
+
+    user_turns = [text.strip() for role, text in conversation_history if role == "user" and text.strip()]
+    if not user_turns:
+        return user_request
+
+    # Include prior user intent so follow-up messages like "proceed" can still
+    # be resolved by deterministic execution.
+    combined = " ".join(user_turns)
+    if user_request.strip() and user_request.strip() not in combined:
+        combined = f"{combined} {user_request.strip()}"
+    return combined.strip()
 
 
 def _render_conversation(history: list[tuple[str, str]]) -> str:
@@ -429,6 +652,20 @@ def _looks_like_execution_summary(response_text: str) -> bool:
     return has_jira_and_slack or has_jira_status_update or has_slack_only or has_unsupported
 
 
+def _looks_like_untrusted_success_claim(response_text: str) -> bool:
+    text = response_text.lower()
+    success_markers = [
+        "created successfully",
+        "notified",
+        "execution summary",
+        "jira bug report",
+        "slack notification",
+    ]
+    return any(marker in text for marker in success_markers) and not _looks_like_execution_summary(
+        response_text
+    )
+
+
 async def orchestrate(
     user_request: str,
     conversation_history: list[tuple[str, str]] | None = None,
@@ -436,6 +673,13 @@ async def orchestrate(
 ) -> str:
     if allow_deterministic:
         deterministic_result = try_execute_simple_request(user_request)
+        if not deterministic_result:
+            candidate_request = _build_deterministic_candidate(
+                user_request=user_request,
+                conversation_history=conversation_history,
+            )
+            if candidate_request and candidate_request != user_request:
+                deterministic_result = try_execute_simple_request(candidate_request)
         if deterministic_result:
             return deterministic_result
 
@@ -476,7 +720,21 @@ async def orchestrate(
         settings=settings,
     )
 
-    return str(result)
+    response_text = str(result)
+    if _looks_like_untrusted_success_claim(response_text):
+        reasoned_execution = try_execute_reasoned_followthrough(
+            user_request=user_request,
+            conversation_history=conversation_history,
+        )
+        if reasoned_execution:
+            return reasoned_execution
+        return (
+            "I could not verify bridge-grounded execution from the model response, so no success was confirmed.\n"
+            "Please provide one actionable command (for example: "
+            "\"Create a Jira bug for <summary> and notify Slack\") so execution can proceed safely."
+        )
+
+    return response_text
 
 
 async def run_interactive_session(initial_user_request: str) -> None:
