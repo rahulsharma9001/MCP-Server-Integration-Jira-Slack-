@@ -300,7 +300,7 @@ the flow is:
 
 1. `orchestrator.py` reads the user request.
 2. It detects that the request is a simple Jira + Slack flow.
-3. It uses the deterministic execution path.
+3. It uses the deterministic execution path by default or Semantic Kernel's reasoning path approach when needed.
 4. It calls `bridge_plugin.py`.
 5. The plugin calls the Node HTTP bridge.
 6. The Node bridge calls the Atlassian MCP server to create the Jira ticket.
