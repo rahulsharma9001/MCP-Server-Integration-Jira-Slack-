@@ -62,13 +62,13 @@ Reliability guardrails:
 - A reasoned follow-through fallback then tries to execute the action through the bridge using parsed conversation intent.
 - If execution still cannot be verified, the orchestrator asks for a direct actionable command instead of reporting false success.
 
-For a deeper explanation of how the Ollama-based orchestration works in this project, see [OLLAMA_ORCHESTRATION.md](/semantic-orchestrator/OLLAMA_ORCHESTRATION.md).
+For a deeper explanation of how the Ollama-based orchestration works in this project, see [OLLAMA_ORCHESTRATION.md](/semantic-orchestrator/docs/OLLAMA_ORCHESTRATION.md).
 
-For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/END_TO_END_RUN_GUIDE.md).
+For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/docs/END_TO_END_RUN_GUIDE.md).
 
-For a component-by-component explanation of runtime behavior, see [COMPONENTS_REFERENCE.md](/semantic-orchestrator/COMPONENTS_REFERENCE.md).
+For a component-by-component explanation of runtime behavior, see [COMPONENTS_REFERENCE.md](/semantic-orchestrator/docs/COMPONENTS_REFERENCE.md).
 
-For the phased roadmap and current source of truth for future development, see [PHASED_DEVELOPMENT_PLAN.md](/semantic-orchestrator/PHASED_DEVELOPMENT_PLAN.md).
+For the phased roadmap and current source of truth for future development, see [PHASED_DEVELOPMENT_PLAN.md](/semantic-orchestrator/docs/PHASED_DEVELOPMENT_PLAN.md).
 
 ## Environment variables
 
