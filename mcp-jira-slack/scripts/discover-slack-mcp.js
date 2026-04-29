@@ -1,3 +1,11 @@
+/**
+ * Slack MCP discovery helper.
+ *
+ * Purpose:
+ * - Lists Slack MCP tools available for current auth/app context.
+ * - Prints configured message tool schema and required fields.
+ * - Helps derive correct env argument mapping (channel/text keys).
+ */
 import { getRuntimeConfig } from "../src/config.js";
 import {
   getRemoteMcpToolDetails,

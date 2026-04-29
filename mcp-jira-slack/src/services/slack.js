@@ -1,3 +1,11 @@
+/**
+ * Slack execution service backed by Slack MCP tools.
+ *
+ * Purpose:
+ * - Normalizes channel input and maps request arguments using env-driven schema keys.
+ * - Sends Slack messages via remote MCP tool calls.
+ * - Returns structured success/error info for orchestration workflows.
+ */
 import { getRuntimeConfig } from "../config.js";
 import { callRemoteMcpTool } from "./mcp-client.js";
 

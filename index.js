@@ -1,3 +1,13 @@
+/**
+ * Legacy standalone Jira MCP server.
+ *
+ * Purpose:
+ * - Exposes Jira tools over MCP stdio directly from this root project.
+ *
+ * Notes:
+ * - This path uses direct Jira credentials and is kept for compatibility/testing.
+ * - The primary demo architecture uses semantic-orchestrator + mcp-jira-slack bridge.
+ */
 import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';

@@ -1,3 +1,14 @@
+"""
+Primary Semantic Kernel orchestration runtime.
+
+Purpose:
+- Accepts natural-language requests for Jira/Slack operations.
+- Tries deterministic execution for common operational patterns.
+- Falls back to Semantic Kernel reasoning with constrained tool-calling.
+- Uses guardrails so only bridge-grounded execution is treated as success.
+- Supports interactive multi-turn clarification with conversation context.
+"""
+
 from __future__ import annotations
 
 import argparse

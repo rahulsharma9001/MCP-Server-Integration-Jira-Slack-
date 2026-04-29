@@ -1,3 +1,11 @@
+/**
+ * Ticket creation workflow.
+ *
+ * Purpose:
+ * - Creates Jira ticket first.
+ * - Optionally sends Slack notification after Jira succeeds.
+ * - Preserves partial-success warnings when Slack fails after Jira creation.
+ */
 import { getRuntimeConfig } from "../config.js";
 import { createJiraTicket } from "../services/jira.js";
 import { sendSlackMessage } from "../services/slack.js";

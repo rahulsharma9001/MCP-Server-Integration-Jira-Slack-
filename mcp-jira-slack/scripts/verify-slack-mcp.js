@@ -1,3 +1,11 @@
+/**
+ * Slack MCP verification script.
+ *
+ * Purpose:
+ * - Sends a real test message through Slack MCP.
+ * - Validates auth, tool name, and argument mapping configuration.
+ * - Used as a direct Slack integration readiness check.
+ */
 import { getRuntimeConfig } from "../src/config.js";
 import { sendSlackMessage } from "../src/services/slack.js";
 

@@ -1,3 +1,11 @@
+/**
+ * Atlassian MCP verification script.
+ *
+ * Purpose:
+ * - Performs a real Jira creation test through Atlassian MCP.
+ * - Confirms auth/tool configuration and response parsing.
+ * - Used as a direct vendor-integration health check.
+ */
 import { getRuntimeConfig } from "../src/config.js";
 import {
   getRemoteMcpToolDetails,

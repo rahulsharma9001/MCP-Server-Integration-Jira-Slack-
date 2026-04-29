@@ -1,3 +1,11 @@
+/**
+ * Local HTTP bridge used by the Python Semantic Kernel orchestrator.
+ *
+ * Purpose:
+ * - Provides stable HTTP endpoints for operational actions.
+ * - Delegates execution to Jira/Slack workflows that call vendor MCP servers.
+ * - Returns structured JSON results used for trusted execution summaries.
+ */
 import http from "http";
 import { getRuntimeConfig, logStartupContext } from "./src/config.js";
 import { orchestrateTicketCreation } from "./src/workflows/ticket-orchestration.js";

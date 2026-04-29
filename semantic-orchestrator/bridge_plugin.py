@@ -1,3 +1,12 @@
+"""
+Semantic Kernel bridge plugin for Jira + Slack actions.
+
+Purpose:
+- Exposes SK-callable functions that represent operational actions.
+- Translates function calls into HTTP requests against the local Node bridge.
+- Keeps Python orchestration layer decoupled from vendor-specific MCP details.
+"""
+
 from __future__ import annotations
 
 import os

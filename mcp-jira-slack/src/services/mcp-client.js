@@ -1,3 +1,11 @@
+/**
+ * Shared remote MCP client utilities.
+ *
+ * Purpose:
+ * - Connects to remote MCP servers (Atlassian/Slack) over streamable HTTP.
+ * - Lists tools, validates tool availability, calls tools, and normalizes errors.
+ * - Provides a consistent response shape for higher-level services.
+ */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 

@@ -1,3 +1,11 @@
+/**
+ * MCP tool server definition for Jira + Slack operations.
+ *
+ * Purpose:
+ * - Registers tool schemas visible to MCP clients.
+ * - Routes tool calls to workflow/service execution.
+ * - Returns user-facing tool responses with error handling.
+ */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {

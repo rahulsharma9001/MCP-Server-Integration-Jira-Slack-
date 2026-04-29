@@ -1,3 +1,11 @@
+/**
+ * End-to-end bridge smoke test.
+ *
+ * Purpose:
+ * - Verifies bridge health endpoint.
+ * - Executes Slack action and Jira+Slack action through bridge routes.
+ * - Quickly confirms the complete Node execution layer is functioning.
+ */
 import { getRuntimeConfig } from "../src/config.js";
 
 async function main() {

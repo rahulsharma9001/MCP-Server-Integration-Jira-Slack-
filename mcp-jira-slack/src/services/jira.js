@@ -1,3 +1,11 @@
+/**
+ * Jira execution service backed by Atlassian MCP tools.
+ *
+ * Purpose:
+ * - Creates Jira tickets through MCP.
+ * - Resolves issues and transitions status through MCP.
+ * - Parses and verifies responses so downstream workflow output is trustworthy.
+ */
 import { getRuntimeConfig } from "../config.js";
 import { callRemoteMcpTool } from "./mcp-client.js";
 

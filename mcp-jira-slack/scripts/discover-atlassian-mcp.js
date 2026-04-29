@@ -1,3 +1,11 @@
+/**
+ * Atlassian MCP discovery helper.
+ *
+ * Purpose:
+ * - Lists available Atlassian MCP tools.
+ * - Prints selected tool schema/details to validate configuration.
+ * - Helps map env tool names before runtime execution.
+ */
 import { getRuntimeConfig } from "../src/config.js";
 import {
   callRemoteMcpTool,

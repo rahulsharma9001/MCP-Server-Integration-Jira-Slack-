@@ -1,3 +1,11 @@
+/**
+ * Jira status-transition workflow.
+ *
+ * Purpose:
+ * - Transitions a Jira issue to a target status.
+ * - Optionally sends Slack notification after transition.
+ * - Returns warnings when Slack notification fails but Jira transition succeeded.
+ */
 import { getRuntimeConfig } from "../config.js";
 import { sendSlackMessage } from "../services/slack.js";
 import { transitionJiraIssueStatus } from "../services/jira.js";

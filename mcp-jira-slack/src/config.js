@@ -1,3 +1,11 @@
+/**
+ * Central runtime configuration loader.
+ *
+ * Purpose:
+ * - Finds and loads .env from known locations.
+ * - Normalizes environment values into one runtime config object.
+ * - Exposes startup logging so misconfiguration is visible early.
+ */
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
