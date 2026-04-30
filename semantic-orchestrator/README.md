@@ -21,9 +21,9 @@ Semantic Kernel Orchestrator (Python)
    v
 HTTP Bridge (Node.js)
    |
-   +--> Jira API
+   +--> Atlassian MCP Server
    |
-   +--> Slack API
+   +--> Slack MCP Server
 ```
 
 ## What the orchestrator does
@@ -34,9 +34,41 @@ HTTP Bridge (Node.js)
 - asks for follow-up when inputs are incomplete
 - returns an execution summary
 
-For a deeper explanation of how the Ollama-based orchestration works in this project, see [OLLAMA_ORCHESTRATION.md](/semantic-orchestrator/OLLAMA_ORCHESTRATION.md).
+## Reasoning Mode Mechanism
 
-For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/END_TO_END_RUN_GUIDE.md).
+When the orchestrator cannot complete a request through deterministic parsing, it switches to Semantic Kernel reasoning mode.
+
+Execution pipeline in reasoning mode:
+
+1. `orchestrator.py` builds a prompt from:
+   - system execution policy
+   - latest user request
+   - conversation context (interactive mode)
+2. Semantic Kernel invokes the configured LLM provider (`ollama`, `openai`, or `azure-openai`).
+3. Tool-calling is enabled with `FunctionChoiceBehavior.Auto(...)` and plugin filter `JiraSlackBridge`.
+4. The LLM can call only bridge plugin functions:
+   - `create_jira_ticket`
+   - `send_slack_message`
+   - `update_jira_status`
+   - `get_execution_policy`
+5. `bridge_plugin.py` converts those function calls into HTTP requests to the Node bridge endpoints (`/actions/...`).
+6. The Node bridge performs real Jira/Slack side effects through Atlassian MCP and Slack MCP.
+7. The orchestrator prints a summary grounded in returned bridge results.
+
+Reliability guardrails:
+
+- Deterministic path is attempted first for common operational request shapes.
+- If an LLM response claims success without bridge-grounded evidence, it is treated as untrusted.
+- A reasoned follow-through fallback then tries to execute the action through the bridge using parsed conversation intent.
+- If execution still cannot be verified, the orchestrator asks for a direct actionable command instead of reporting false success.
+
+For a deeper explanation of how the Ollama-based orchestration works in this project, see [OLLAMA_ORCHESTRATION.md](/semantic-orchestrator/docs/OLLAMA_ORCHESTRATION.md).
+
+For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md](/semantic-orchestrator/docs/END_TO_END_RUN_GUIDE.md).
+
+For a component-by-component explanation of runtime behavior, see [COMPONENTS_REFERENCE.md](/semantic-orchestrator/docs/COMPONENTS_REFERENCE.md).
+
+For the phased roadmap and current source of truth for future development, see [PHASED_DEVELOPMENT_PLAN.md](/semantic-orchestrator/docs/PHASED_DEVELOPMENT_PLAN.md).
 
 ## Environment variables
 
@@ -45,6 +77,17 @@ For a step-by-step setup and execution walkthrough, see [END_TO_END_RUN_GUIDE.md
 ```bash
 ORCHESTRATION_API_PORT=3010
 ORCHESTRATION_API_KEY=your-shared-secret
+INTEGRATION_MODE=mcp
+ATLASSIAN_MCP_URL=https://mcp.atlassian.com/v1/mcp
+ATLASSIAN_MCP_CREATE_ISSUE_TOOL=createJiraIssue
+ATLASSIAN_MCP_EMAIL=your-email@example.com
+ATLASSIAN_MCP_API_TOKEN=your-atlassian-api-token
+SLACK_MCP_URL=https://mcp.slack.com/mcp
+SLACK_MCP_SEND_MESSAGE_TOOL=slack_send_message
+SLACK_MCP_AUTH_HEADER=Bearer your-slack-mcp-access-token
+SLACK_MCP_APP_ID=your-slack-app-id
+SLACK_MCP_CHANNEL_ARG=channel_id
+SLACK_MCP_TEXT_ARG=message
 ```
 
 ### Semantic Kernel

@@ -4,4 +4,5 @@ node_modules
 .codex
 semantic-orchestrator/__pycache__
 .github
-semantic-orchestrator/.venv
+semantic-orchestrator/.venv/
+DEMO_PRESENTATION_GUIDE.md

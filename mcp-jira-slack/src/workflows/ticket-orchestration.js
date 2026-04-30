@@ -1,3 +1,11 @@
+/**
+ * Ticket creation workflow.
+ *
+ * Purpose:
+ * - Creates Jira ticket first.
+ * - Optionally sends Slack notification after Jira succeeds.
+ * - Preserves partial-success warnings when Slack fails after Jira creation.
+ */
 import { getRuntimeConfig } from "../config.js";
 import { createJiraTicket } from "../services/jira.js";
 import { sendSlackMessage } from "../services/slack.js";
@@ -27,6 +35,10 @@ export async function orchestrateTicketCreation({
   });
 
   result.jira = ticket;
+  if (!ticket?.key) {
+    result.warnings.push("Jira ticket key is missing. Slack notification was skipped.");
+    return result;
+  }
 
   const resolvedChannel = slackChannel || config.defaultSlackChannel;
   if (!notifySlack || !resolvedChannel) {
@@ -34,9 +46,10 @@ export async function orchestrateTicketCreation({
   }
 
   try {
+    const jiraLabel = ticket.key || ticket.rawText || "Jira ticket created";
     const message =
       slackMessage ||
-      `🎫 Jira Ticket Created: ${ticket.key}\nSummary: ${summary}\nType: ${issueType}`;
+      `🎫 Jira Ticket Created: ${jiraLabel}\nSummary: ${summary}\nType: ${issueType}`;
 
     const slackResponse = await sendSlackMessage(resolvedChannel, message);
     result.slack = slackResponse;
