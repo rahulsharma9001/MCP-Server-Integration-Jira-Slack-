@@ -195,8 +195,13 @@ npm run start:mcp
 ```
 
 ### 3. Run Semantic Kernel orchestrator
+
 ```bash
 cd semantic-orchestrator
+```
+
+Deterministic mode:
+```bash
 python orchestrator.py "Create a Jira bug for login failures and notify Slack"
 ```
 
