@@ -1,337 +1,247 @@
-# 🚀 MCP Jira + Slack Automation Server
+﻿# MCP Server Integration: Jira + Slack + Semantic Kernel
 
-This project implements a **Model Context Protocol (MCP) server** that enables AI-driven automation for:
+## Project Overview
+This repository is a practical integration project that combines:
+- A Node.js MCP tool server for Jira and Slack operations
+- A Node.js HTTP bridge for controlled action execution
+- A Python Semantic Kernel orchestrator for natural-language decisioning and tool invocation
 
-- 🧾 Creating Jira tickets  
-- 💬 Sending Slack notifications  
-- 🤖 Triggering actions using natural language via MCP clients (e.g., Cursor)  
+The goal is to validate and demonstrate a real orchestration pattern where Semantic Kernel can coordinate operational workflows while MCP-connected services execute the actual side effects.
 
----
+## Motive / Objective
+To find whether semantic kernel is feasible with MCP server integration or not.
 
-## 🎯 Overview
+## What This Project Solves
+- Accepts natural-language operational requests
+- Creates Jira tickets through MCP-integrated flows
+- Sends Slack notifications based on workflow rules
+- Supports deterministic execution for common request patterns
+- Falls back to Semantic Kernel reasoning when intent is complex or underspecified
 
-This system allows you to interact with Jira and Slack using simple natural language commands like:
-
+## High-Level Architecture
+```text
+User Request
+   |
+   v
+Semantic Kernel Orchestrator (Python)
+   |
+   v
+HTTP Bridge (Node.js)
+   |
+   +--> Jira workflow (via MCP-enabled service path)
+   |
+   +--> Slack workflow (via MCP-enabled service path)
 ```
-Create a Jira ticket for login bug with description "Login API returning 500 error"
-```
 
-The MCP server processes this request and:
+There is also a legacy standalone root MCP server (`index.js`) kept for compatibility/testing.
 
-1. Creates a Jira ticket  
-2. Sends a Slack notification (optional)  
-3. Returns the result back to the AI client  
-
----
-
-## 🏗️ Architecture
-
-```
-                         ┌──────────────────────────────┐
-                         │          User                │
-                         │  (Natural Language Prompt)   │
-                         └─────────────┬────────────────┘
-                                       │
-                                       ▼
-                         ┌──────────────────────────────┐
-                         │      MCP Client              │
-                         │   (Cursor / AI Interface)    │
-                         │                              │
-                         │ - Parses user intent         │
-                         │ - Maps to MCP tools          │
-                         └─────────────┬────────────────┘
-                                       │
-                          (MCP Protocol over STDIO)
-                                       │
-                                       ▼
-        ┌────────────────────────────────────────────────────────────────────┐
-        │                     MCP SERVER (Node.js)                           │
-        │                                                                    │
-        │  ┌──────────────────────────────────────────────────────────────┐  │
-        │  │                 Transport Layer                              │  │
-        │  │  (StdioServerTransport)                                      │  │
-        │  │  - Handles communication with MCP client                     │  │
-        │  └──────────────────────────────────────────────────────────────┘  │
-        │                                                                    │
-        │  ┌──────────────────────────────────────────────────────────────┐  │
-        │  │                 Tool Registry Layer                          │  │
-        │  │  (ListToolsRequestSchema)                                    │  │
-        │  │  - Defines available tools                                   │  │
-        │  │    • hello_world                                             │  │
-        │  │    • send_slack_message                                      │  │
-        │  │    • create_jira_ticket                                      │  │
-        │  └──────────────────────────────────────────────────────────────┘  │
-        │                                                                    │
-        │  ┌──────────────────────────────────────────────────────────────┐  │
-        │  │                 Tool Execution Layer                         │  │
-        │  │  (CallToolRequestSchema)                                     │  │
-        │  │  - Routes incoming tool requests                             │  │
-        │  │  - Validates inputs                                          │  │
-        │  │  - Calls appropriate service functions                       │  │
-        │  └──────────────────────────────────────────────────────────────┘  │
-        │                                                                    │
-        │  ┌──────────────────────────────────────────────────────────────┐  │
-        │  │                 Business Logic Layer                         │  │
-        │  │                                                              │  │
-        │  │  🔹 Jira Service                                             │  │
-        │  │     - Creates tickets via REST API                           │  │
-        │  │     - Uses ADF format for description                        │  │
-        │  │     - Handles auth (email + API token)                       │  │
-        │  │                                                              │  │
-        │  │  🔹 Slack Service                                            │  │
-        │  │     - Sends messages via chat.postMessage                    │  │
-        │  │     - Uses bot token (xoxb)                                  │  │
-        │  │     - Normalizes channel format (# or ID)                    │  │
-        │  │                                                              │  │
-        │  └──────────────────────────────────────────────────────────────┘  │
-        │                                                                    │
-        │  ┌──────────────────────────────────────────────────────────────┐  │
-        │  │                 Configuration Layer                          │  │
-        │  │  (.env + dotenv)                                             │  │
-        │  │  - Jira credentials                                          │  │
-        │  │  - Slack token                                               │  │
-        │  │  - Default channel                                           │  │
-        │  └──────────────────────────────────────────────────────────────┘  │
-        │                                                                    │
-        │  ┌──────────────────────────────────────────────────────────────┐  │
-        │  │                 Error Handling Layer                         │  │
-        │  │  - Captures API errors                                       │  │
-        │  │  - Returns structured messages to MCP client                 │  │
-        │  │  - Logs detailed debug info                                  │  │
-        │  └──────────────────────────────────────────────────────────────┘  │
-        └────────────────────────────────────────────────────────────────────┘
-                                          │
-                                          ▼
-                                          │
-                                          ▼
-        ┌────────────────────────────────────────────────────────────────────┐
-        │               Semantic Kernel Orchestrator (Python)                │
-        │                                                                    │
-        │  - Interprets intent and builds execution flow                     │
-        │  - Chooses whether Jira, Slack, or both are needed                 │
-        │  - Calls the Node HTTP bridge as a controlled execution layer      │
-        └────────────────────────────────────────────────────────────────────┘
-                                          │
-                                          ▼
-            ┌──────────────────────────────┬──────────────────────────────┐
-            │                              │                              │
-            ▼                              ▼                              ▼
-    ┌────────────────────┐     ┌────────────────────┐        ┌────────────────────┐
-    │     Jira API       │     │    Slack API       │        │   External Systems │
-    │                    │     │                    │        │   (Future scope)   │
-    │ - Create Issues    │     │ - Send Messages    │        │ - Webhooks         │
-    │ - Manage Tickets   │     │ - Channel Delivery │        │ - Analytics        │
-    └────────────────────┘     └────────────────────┘        └────────────────────┘
-```
----
-
-## ⚙️ Tech Stack
-
-- Node.js  
-- MCP SDK (@modelcontextprotocol/sdk)  
-- Axios  
-- Jira REST API  
-- Slack Web API  
-
----
-
-## 📁 Project Structure
-
-```
-jira-mcp-server/
+## Repository Structure
+```text
+.
 ├── README.md
+├── package.json                      # Legacy root MCP server package
+├── index.js                          # Legacy standalone Jira MCP server
 ├── mcp-jira-slack/
-│   ├── server.js
-│   ├── http-bridge.js
+│   ├── server.js                     # MCP stdio server entry point
+│   ├── http-bridge.js                # HTTP bridge for orchestrator actions
 │   ├── package.json
-│   └── src/
-│       ├── config.js
-│       ├── mcp-server.js
-│       ├── services/
-│       └── workflows/
+│   ├── src/
+│   │   ├── config.js
+│   │   ├── mcp-server.js
+│   │   ├── services/
+│   │   └── workflows/
+│   └── scripts/                      # Discovery/verification/smoke scripts
 └── semantic-orchestrator/
-    ├── orchestrator.py
-    ├── bridge_plugin.py
+    ├── orchestrator.py               # Semantic Kernel runtime
+    ├── bridge_plugin.py              # Plugin functions calling bridge endpoints
     ├── requirements.txt
-    └── README.md
+    ├── README.md
+    ├── assets/
+    └── docs/
 ```
 
----
+## Core Components
+1. `mcp-jira-slack/server.js`
+- Runs MCP server over stdio
+- Exposes Jira/Slack tools to MCP clients
 
-## 🧭 Orchestration Layers
+2. `mcp-jira-slack/http-bridge.js`
+- Exposes HTTP endpoints:
+  - `GET /health`
+  - `POST /actions/send-slack-message`
+  - `POST /actions/create-jira-ticket`
+  - `POST /actions/update-jira-status`
+- Validates API key (`x-api-key`) when configured
 
-### Existing Node orchestration
+3. `semantic-orchestrator/orchestrator.py`
+- Accepts natural-language requests
+- Uses deterministic parsing for common requests
+- Falls back to Semantic Kernel function-calling when needed
+- Produces execution summaries grounded in bridge responses
 
-The Node MCP server already performs a basic orchestration flow:
+4. `index.js` (root)
+- Legacy direct Jira MCP server (standalone path)
 
-1. Receive a tool call
-2. Create a Jira ticket
-3. Optionally notify Slack
-4. Return one combined response
+## Tech Stack
+- Node.js (ESM)
+- Python 3.x
+- Semantic Kernel
+- MCP SDK (`@modelcontextprotocol/sdk`)
+- Jira API integrations
+- Slack integrations
 
-### Semantic Kernel orchestration
+## Prerequisites
+- Node.js 18+
+- Python 3.10+
+- Jira and Slack credentials/tokens
+- Optional: Ollama (if using local model provider)
 
-The new Semantic Kernel sidecar adds a higher-level orchestration layer:
+## Environment Configuration
+Create/update the root `.env` file.
 
-1. Understand user intent
-2. Check whether details are missing
-3. Decide which actions should run
-4. Call the Node bridge in the right order
-5. Return a concise execution summary
+### Bridge and MCP runtime
+```bash
+ORCHESTRATION_API_PORT=3010
+ORCHESTRATION_API_KEY=your-shared-secret
 
-For a detailed explanation of the Ollama-based orchestration flow and its benefits, see [semantic-orchestrator/OLLAMA_ORCHESTRATION.md](semantic-orchestrator/OLLAMA_ORCHESTRATION.md).
+INTEGRATION_MODE=mcp
+ATLASSIAN_MCP_URL=https://mcp.atlassian.com/v1/mcp
+ATLASSIAN_MCP_CREATE_ISSUE_TOOL=createJiraIssue
+ATLASSIAN_MCP_EMAIL=your-email@example.com
+ATLASSIAN_MCP_API_TOKEN=your-atlassian-api-token
 
----
-
-## 🔐 Environment Variables
-
-# Jira
+SLACK_MCP_URL=https://mcp.slack.com/mcp
+SLACK_MCP_SEND_MESSAGE_TOOL=slack_send_message
+SLACK_MCP_AUTH_HEADER=Bearer your-slack-mcp-access-token
+SLACK_MCP_APP_ID=your-slack-app-id
+SLACK_MCP_CHANNEL_ARG=channel_id
+SLACK_MCP_TEXT_ARG=message
 ```
-JIRA_BASE_URL=https://your-domain.atlassian.net
-JIRA_EMAIL=your-email
-JIRA_API_TOKEN=your-token
-JIRA_PROJECT_KEY=SCRUM
+
+### Semantic Kernel provider options
+Use one provider block:
+
+```bash
+# Option 1: Ollama
+LLM_PROVIDER=ollama
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_CHAT_MODEL_ID=llama3.2
+ORCHESTRATION_BRIDGE_URL=http://localhost:3010
+ORCHESTRATION_API_KEY=your-shared-secret
 ```
 
----
-```
-# Slack
-SLACK_BOT_TOKEN=xoxb-xxxx
-DEFAULT_SLACK_CHANNEL=C12345678
-```
----
-
-## 🚀 Run Server
-```
-node server.js
+```bash
+# Option 2: OpenAI
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your-key
+OPENAI_CHAT_MODEL_ID=gpt-4.1
+ORCHESTRATION_BRIDGE_URL=http://localhost:3010
+ORCHESTRATION_API_KEY=your-shared-secret
 ```
 
-### Run the HTTP bridge for Semantic Kernel
+```bash
+# Option 3: Azure OpenAI
+LLM_PROVIDER=azure-openai
+AZURE_OPENAI_API_KEY=your-key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_CHAT_DEPLOYMENT=your-deployment
+ORCHESTRATION_BRIDGE_URL=http://localhost:3010
+ORCHESTRATION_API_KEY=your-shared-secret
+```
 
+### Legacy direct Jira mode (root `index.js`)
+```bash
+JIRA_HOST=https://your-domain.atlassian.net
+# or JIRA_BASE_URL=https://your-domain.atlassian.net
+JIRA_EMAIL=your-email@example.com
+JIRA_API_TOKEN=your-atlassian-api-token
+```
+
+## Installation
+From repository root:
+
+```bash
+npm install
+```
+
+Install Node dependencies for MCP/bridge module:
+
+```bash
+cd mcp-jira-slack
+npm install
+```
+
+Install Python dependencies:
+
+```bash
+cd ../semantic-orchestrator
+python -m venv .venv
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+## How to Run
+### 1. Start Node bridge
 ```bash
 cd mcp-jira-slack
 npm run start:bridge
 ```
 
-### Run the Semantic Kernel orchestrator
+### 2. (Optional) Start MCP stdio server
+```bash
+cd mcp-jira-slack
+npm run start:mcp
+```
 
+### 3. Run Semantic Kernel orchestrator
 ```bash
 cd semantic-orchestrator
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python orchestrator.py "Create a Jira bug for login failure and notify Slack"
+python orchestrator.py "Create a Jira bug for login failures and notify Slack"
 ```
----
 
-# 🧠 MCP Tools (Detailed Explanation)
+Interactive mode:
+```bash
+python orchestrator.py --interactive "Create a ticket for checkout timeout"
+```
 
-These tools are exposed by the MCP server and can be invoked using natural language.
+## Utility Scripts
+Inside `mcp-jira-slack`:
+- `npm run discover:atlassian-mcp`
+- `npm run verify:atlassian-mcp`
+- `npm run discover:slack-mcp`
+- `npm run verify:slack-mcp`
+- `npm run smoke:mcp-bridge`
 
----
+## Typical Execution Flow
+1. User gives a natural-language request.
+2. Orchestrator first tries deterministic handling.
+3. If needed, Semantic Kernel reasoning triggers constrained plugin function calls.
+4. Plugin calls Node HTTP bridge endpoints.
+5. Bridge executes Jira/Slack workflows.
+6. Orchestrator returns execution summary (ticket key, Slack status, warnings).
 
-## 🔹 hello_world
+## Known Notes
+- Root `index.js` is a legacy compatibility path, not the main demo flow.
+- Main integration path is `semantic-orchestrator` + `mcp-jira-slack/http-bridge.js`.
+- Keep secrets only in `.env` and avoid committing tokens.
 
-Purpose: Test MCP connectivity
+## Troubleshooting
+- 401 from bridge:
+  - Verify `ORCHESTRATION_API_KEY` matches request header `x-api-key`.
+- Slack message not delivered:
+  - Verify Slack auth header/token, app permissions, and channel argument mapping.
+- Jira issue creation fails:
+  - Verify Atlassian MCP credentials, project key defaults, and issue type mapping.
+- Orchestrator cannot execute:
+  - Confirm selected `LLM_PROVIDER` variables are fully set.
 
-Input:
-{ "name": "Rahul" }
+## Additional Documentation
+- `semantic-orchestrator/README.md`
+- `semantic-orchestrator/docs/END_TO_END_RUN_GUIDE.md`
+- `semantic-orchestrator/docs/COMPONENTS_REFERENCE.md`
+- `semantic-orchestrator/docs/OLLAMA_ORCHESTRATION.md`
+- `semantic-orchestrator/docs/PHASED_DEVELOPMENT_PLAN.md`
 
-Output:
-Hello Rahul!
-
-Use Case:
-- Debug MCP setup
-
----
-
-## 🔹 send_slack_message
-
-Purpose: Send message to Slack
-
-Input:
-{
-  "channel": "C12345678",
-  "text": "Hello from MCP!"
-}
-
-Processing:
-- Uses Slack API (chat.postMessage)
-- Requires xoxb bot token
-
-Output:
-Message sent to Slack
-
-Notes:
-- Bot must be invited
-- Use channel ID
-
----
-
-## 🔹 create_jira_ticket
-
-Purpose: Create Jira ticket + notify Slack
-
-Input:
-{
-  "summary": "Login bug",
-  "description": "Login API returning 500 error"
-}
-
-Processing:
-- Calls Jira API (/rest/api/3/issue)
-- Uses ADF format
-- Sends Slack notification
-
-Output:
-Jira Ticket Created (e.g., SCRUM-10)
-
-Notes:
-- Issue type must exist
-- Project key must be correct
-
----
-
-# 🔍 server.js Explanation
-
-1. MCP Server Initialization  
-2. Environment Setup (.env)  
-3. Jira API Integration  
-4. Slack API Integration  
-5. Tool Registration  
-6. Tool Execution  
-7. Slack Notification  
-8. Error Handling  
-9. STDIO Transport  
-
----
-
-## 🧪 Example Flow
-
-Input:
-Create Jira ticket
-
-Output:
-- Jira created  
-- Slack notified  
-
----
-
-## 🚨 Common Issues
-
-- not_allowed_token_type → use xoxb  
-- channel_not_found → use channel ID  
-- Slack not sending → invite bot  
-- Jira error → fix issue type  
-- env not loading → fix path  
-
----
-
-## 🚀 Future Enhancements
-
-- Jira → Slack webhook  
-- Slack slash command  
-- AI auto-priority  
-- Docker  
-
----
+## Status
+This project is an active feasibility and integration testbed for Semantic Kernel + MCP-based operational automation.
