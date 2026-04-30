@@ -205,6 +205,20 @@ Interactive mode:
 python orchestrator.py --interactive "Create a ticket for checkout timeout"
 ```
 
+### Interactive Mode Sample Requests (Reasoning Approach)
+Use the following prompts as sample requests to make the LLM work in interactive mode:
+
+1. Investigate this as a potential incident: customers are intermittently logged out after login. Decide whether to create a Jira bug, what severity it should be, what assumptions to record, and notify backend Slack with a concise action summary.
+2. We saw elevated 5xx errors right after deployment. Analyze whether this should be one Jira ticket or multiple, justify your choice, create the ticket(s), and post a Slack update with what was done and what still needs input.
+3. Treat this as triage: payment confirmations are delayed for some users but not all. Determine probable impact level, choose Bug vs Task with reasoning, create Jira accordingly, and notify Slack with next debugging steps.
+4. I’m not sure if this is auth, cache, or gateway related: login fails only in one region. Ask only blocking follow-ups, infer the rest with defaults, then create Jira and send a backend Slack notification with ticket link context.
+5. Perform incident-style decisioning for ‘users can log in but are immediately redirected to sign-in again.’ Decide severity, suspected component, and acceptance criteria; create Jira and notify Slack once done.
+6. Given this vague report — ‘checkout sometimes hangs’ — reason through what minimum useful ticket should contain, create it in Jira with structured details, and send Slack a short status plus risks.
+7. Act as an on-call coordinator: evaluate whether this issue needs immediate Jira escalation (‘API auth failures after config change’), include debugging hypotheses in description, and notify backend Slack with urgency.
+8. For this report, ‘mobile users unable to authenticate after release,’ choose if default project/channel are sufficient, proceed without asking non-blocking questions, create Jira, and post Slack summary of executed actions only.
+9. Do a root-cause-oriented ticket draft for ‘intermittent login 401 despite valid credentials.’ Decide severity and priority rationale, create Jira bug, and notify Slack with the chosen rationale and ticket key.
+10. Simulate real triage workflow: classify this issue (‘session token not issued for some SSO users’), decide whether to create one incident bug now or defer pending data, then execute Jira/Slack actions based on that decision.
+
 ## Utility Scripts
 Inside `mcp-jira-slack`:
 - `npm run discover:atlassian-mcp`
